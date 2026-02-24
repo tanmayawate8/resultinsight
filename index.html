@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analyzer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #0066cc;
+            font-size: 2.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .marks-container {
+            margin-bottom: 15px;
+        }
+
+        .marks-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .marks-inputs input {
+            flex: 1;
+        }
+
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0052a3;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #0066cc;
+            color: white;
+        }
+
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .marks-inputs {
+                flex-direction: column;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Student Performance Analyzer</h1>
+        </header>
+        
+        <div class="card">
+            <h2>Add Student</h2>
+            <form id="student-form">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="marks-container">
+                    <label>Marks (out of 100 each):</label>
+                    <div class="marks-inputs">
+                        <input type="number" id="mark1" placeholder="Subject 1" min="0" max="100" required>
+                        <input type="number" id="mark2" placeholder="Subject 2" min="0" max="100" required>
+                        <input type="number" id="mark3" placeholder="Subject 3" min="0" max="100" required>
+                        <input type="number" id="mark4" placeholder="Subject 4" min="0" max="100" required>
+                        <input type="number" id="mark5" placeholder="Subject 5" min="0" max="100" required>
+                    </div>
+                </div>
+                <button type="submit" id="add-student-btn">Add Student</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>Students</h2>
+            <table id="students-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Total</th>
+                        <th>Percentage</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody id="students-tbody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <h2>Analysis</h2>
+            <div id="analysis-results" style="display: none;">
+                <p id="topper"></p>
+                <p id="class-average"></p>
+            </div>
+            <div class="buttons">
+                <button id="analyze-btn">Analyze</button>
+                <button id="generate-pdf-btn" style="display: none;">Generate PDF Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const studentForm = document.getElementById('student-form');
+            const studentsTbody = document.getElementById('students-tbody');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const generatePdfBtn = document.getElementById('generate-pdf-btn');
+            const analysisResults = document.getElementById('analysis-results');
+            const topperP = document.getElementById('topper');
+            const classAverageP = document.getElementById('class-average');
+            
+            let students = [];
+            
+            studentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value;
+                const marks = [
+                    parseInt(document.getElementById('mark1').value),
+                    parseInt(document.getElementById('mark2').value),
+                    parseInt(document.getElementById('mark3').value),
+                    parseInt(document.getElementById('mark4').value),
+                    parseInt(document.getElementById('mark5').value)
+                ];
+                
+                // Basic validation
+                if (marks.some(mark => mark > 100 || mark < 0)) {
+                    alert('Marks must be between 0 and 100');
+                    return;
+                }
+                
+                students.push({ name, marks });
+                
+                // Add to table
+                const row = studentsTbody.insertRow();
+                row.insertCell(0).textContent = name;
+                row.insertCell(1).textContent = 'Pending';
+                row.insertCell(2).textContent = 'Pending';
+                row.insertCell(3).textContent = 'Pending';
+                
+                // Clear form
+                studentForm.reset();
+            });
+            
+            analyzeBtn.addEventListener('click', function() {
+                if (students.length === 0) {
+                    alert('Please add at least one student');
+                    return;
+                }
+                
+                fetch('http://127.0.0.1:5000/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ students }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Update table
+                    const rows = studentsTbody.rows;
+                    data.students.forEach((student, index) => {
+                        rows[index].cells[1].textContent = student.total;
+                        rows[index].cells[2].textContent = student.percentage + '%';
+                        rows[index].cells[3].textContent = student.grade;
+                    });
+                    
+                    // Show analysis results
+                    topperP.textContent = `Topper: ${data.topper.name} (${data.topper.percentage}%)`;
+                    classAverageP.textContent = `Class Average: ${data.class_average}%`;
+                    analysisResults.style.display = 'block';
+                    
+                    // Show generate PDF button
+                    generatePdfBtn.style.display = 'inline-block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred during analysis. Make sure the Flask server is running.');
+                });
+            });
+            
+            generatePdfBtn.addEventListener('click', function() {
+                fetch('http://127.0.0.1:5000/generate_pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        students: students.map((student, index) => ({
+                            name: student.name,
+                            marks: student.marks,
+                            total: parseInt(studentsTbody.rows[index].cells[1].textContent),
+                            percentage: parseFloat(studentsTbody.rows[index].cells[2].textContent),
+                            grade: studentsTbody.rows[index].cells[3].textContent
+                        })),
+                        topper: {
+                            name: topperP.textContent.split(': ')[1].split(' (')[0],
+                            percentage: parseFloat(topperP.textContent.split('(')[1].split('%)')[0])
+                        },
+                        class_average: parseFloat(classAverageP.textContent.split(': ')[1])
+                    }),
+                })
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'student_report.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while generating the PDF. Make sure the Flask server is running.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
